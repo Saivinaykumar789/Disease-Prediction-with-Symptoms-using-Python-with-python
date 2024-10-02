@@ -2,12 +2,6 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-import openai
-# Setting up the OpenAI API key for authorization
-openai_api_key = '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'
-openai.api_key = openai_api_key
-
-
 # Load the trained model
 model_filename = 'random_forest_model.joblib'
 rf_model = joblib.load(model_filename)
@@ -38,6 +32,7 @@ symptoms = ['itching', 'skin_rash', 'nodal_skin_eruptions', 'continuous_sneezing
             'blood_in_sputum', 'prominent_veins_on_calf', 'palpitations', 'painful_walking', 'pus_filled_pimples',
             'blackheads', 'scurring', 'skin_peeling', 'silver_like_dusting', 'small_dents_in_nails', 'inflammatory_nails',
             'blister', 'red_sore_around_nose', 'yellow_crust_ooze']
+
 # Initialize session state for checkbox states if not already initialized
 if 'checkbox_states' not in st.session_state:
     st.session_state.checkbox_states = {symptom: False for symptom in symptoms}
@@ -53,9 +48,9 @@ search_query = st.text_input("Search symptoms", "", on_change=None)
 filtered_symptoms = [symptom for symptom in symptoms if search_query.lower() in symptom.lower()]
 
 # Display checkboxes for symptoms in a grid
-cols = st.columns(3)
+cols = st.columns(4)
 for i, symptom in enumerate(filtered_symptoms):
-    col = cols[i % 3]
+    col = cols[i % 4]
     if col.checkbox(symptom, key=symptom, value=st.session_state.checkbox_states[symptom]):
         st.session_state.checkbox_states[symptom] = True
     else:
@@ -66,17 +61,6 @@ def predict_disease(input_df):
     prediction = rf_model.predict(input_df)
     return prediction[0]
 
-# Interaction with OpenAI
-def ask_openai(message):
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a healthcare assitant, you provide patient with concise info about the disease,possible causes, and steps to mitigate it in a structure manner.and with headings bolded and other etc"},
-            {"role": "user", "content": message},
-        ]
-    )
-    return response.choices[0].message.content.strip()
-
 # Make prediction on button click
 if st.button("Predict"):
     user_input_dict = {symptom: value for symptom, value in st.session_state.checkbox_states.items()}
@@ -85,9 +69,6 @@ if st.button("Predict"):
     # Prediction
     result = predict_disease(user_input_df)
     st.success(f"The predicted disease is: {result}")
-    
-    # Query formation and OpenAI interaction only occurs if a prediction has been made
-    query = f"The predicted disease for me was {result}"
-    with st.spinner("Generating response..."):
-        response = ask_openai(query)
-        st.write(response)
+
+    # Display a generic message instead of AI-generated response
+    st.info("Please consult with a healthcare professional for more information about this condition.")
